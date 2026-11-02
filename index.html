@@ -236,22 +236,21 @@
         flashlightOn: false
     };
 
-    // Ссылки на объекты сцены
-    const worldObjects = []; // Стены для коллизий
-    const interactiveItems = []; // Предметы для сбора
+    const worldObjects = []; 
+    const interactiveItems = []; 
     let clotMesh = null;
     const clotState = {
         position: new THREE.Vector3(20, 0, 20),
         target: new THREE.Vector3(),
         speed: 2.2,
-        state: 'patrol', // patrol, chase
+        state: 'patrol',
         timer: 0
     };
 
     let flashlightLight;
     let ambientLight;
 
-    const labSize = 10; // Размер сетки лабиринта (10х10 комнат, комната 10х10 юнитов -> огромный лабиринт 100х100)
+    const labSize = 10; 
     const tileSize = 10;
     const mapGrid = [];
 
@@ -262,12 +261,6 @@
         isPlaying = document.body.requestPointerLock ? document.body.requestPointerLock() : true;
     });
 
-    document.addEventListener('pointerlockchange', () => {
-        if (document.pointerLockElement !== document.body && isPlaying && !gameWon && !gameOver) {
-            // Можно поставить на паузу при потере фокуса мыши
-        }
-    });
-
     document.addEventListener('mousemove', (e) => {
         if (!isPlaying || gameWon || gameOver) return;
         const sensitivity = 0.002;
@@ -276,7 +269,6 @@
         player.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, player.rotation.x));
     });
 
-    // Надежная обработка нажатий WASD и Стрелок
     window.addEventListener('keydown', (e) => {
         if (!isPlaying) return;
         const code = e.code;
@@ -358,7 +350,6 @@
         ambientLight = new THREE.AmbientLight(0xffea88, 0.6);
         scene.add(ambientLight);
 
-        // Фонарик игрока
         flashlightLight = new THREE.SpotLight(0xfffaed, 2.5, 30, Math.PI / 5, 0.5, 1);
         flashlightLight.position.set(0, 0, 0);
         flashlightLight.target.position.set(0, 0, -10);
@@ -377,20 +368,16 @@
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
         window.addEventListener('resize', onWindowResize);
-
         animate();
     }
 
-    // Генерация гигантского желтого лабиринта
     function buildLabyrinth() {
-        // Простая генерация лабиринта сетки
         for (let x = 0; x < labSize; x++) {
             mapGrid[x] = [];
             for (let z = 0; z < labSize; z++) {
-                // По краям внешние стены, внутри лабиринт (1 - стена, 0 - проход)
                 let isWall = (x === 0 || x === labSize - 1 || z === 0 || z === labSize - 1) ? (Math.random() < 0.8) : (Math.random() < 0.3);
-                if (x === 1 && z === 1) isWall = false; // Стартовая зона свободна
-                if (x === Math.floor(labSize/2) && z === Math.floor(labSize/2)) isWall = false; // Центр свободен
+                if (x === 1 && z === 1) isWall = false;
+                if (x === Math.floor(labSize/2) && z === Math.floor(labSize/2)) isWall = false;
                 mapGrid[x][z] = isWall ? 1 : 0;
             }
         }
@@ -401,20 +388,17 @@
 
         const wallGeo = new THREE.BoxGeometry(tileSize, 4, tileSize);
 
-        // Пол
         const floorGeo = new THREE.PlaneGeometry(labSize * tileSize, labSize * tileSize);
         const floor = new THREE.Mesh(floorGeo, carpetMat);
         floor.rotation.x = -Math.PI / 2;
         floor.position.set((labSize * tileSize) / 2 - tileSize/2, 0, (labSize * tileSize) / 2 - tileSize/2);
         scene.add(floor);
 
-        // Потолок
         const ceiling = new THREE.Mesh(floorGeo, ceilingMat);
         ceiling.rotation.x = Math.PI / 2;
         ceiling.position.set((labSize * tileSize) / 2 - tileSize/2, 4, (labSize * tileSize) / 2 - tileSize/2);
         scene.add(ceiling);
 
-        // Стены и лампы
         for (let x = 0; x < labSize; x++) {
             for (let z = 0; z < labSize; z++) {
                 const posX = x * tileSize;
@@ -429,7 +413,6 @@
                         mesh: wall
                     });
                 } else {
-                    // Лампа на потолке
                     if (Math.random() < 0.4) {
                         const lightMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 1), new THREE.MeshBasicMaterial({ color: 0xffffff }));
                         lightMesh.position.set(posX, 3.9, posZ);
@@ -443,10 +426,9 @@
             }
         }
 
-        // Центральный выход (место побега)
         const centerX = Math.floor(labSize / 2) * tileSize;
         const centerZ = Math.floor(labSize / 2) * tileSize;
-        player.position.set(1.5, 1.7, 1.5); // Старт
+        player.position.set(1.5, 1.7, 1.5);
 
         const exitGeo = new THREE.BoxGeometry(3, 3, 0.5);
         const exitMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.2 });
@@ -457,7 +439,6 @@
         interactiveItems.push(exitDoor);
     }
 
-    // Случайное раскидывание предметов по лабиринту
     function spawnItems() {
         const itemTypes = [];
         for (let i = 0; i < 7; i++) itemTypes.push('ladder');
@@ -504,17 +485,14 @@
         return new THREE.Mesh(geo, mat);
     }
 
-    // Спавн Чернильного Паука Клота
     function spawnClot() {
         const clotGroup = new THREE.Group();
         const bodyMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1, metalness: 0.9 });
         
-        // Тело паука
         const body = new THREE.Mesh(new THREE.SphereGeometry(1.2, 16, 16), bodyMat);
         body.position.y = 1.0;
         clotGroup.add(body);
 
-        // Светящиеся глаза
         const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), eyeMat);
         eye1.position.set(0.4, 1.3, -1.0);
@@ -523,7 +501,6 @@
         clotGroup.add(eye1);
         clotGroup.add(eye2);
 
-        // Шесть паучьих лап
         for (let i = 0; i < 6; i++) {
             const legGeo = new THREE.CylinderGeometry(0.08, 0.04, 3);
             const leg = new THREE.Mesh(legGeo, bodyMat);
@@ -538,7 +515,6 @@
         clotMesh = clotGroup;
     }
 
-    // Спасение при столкновении с Клотом
     function triggerJumpscare() {
         if (gameOver || gameWon) return;
         gameOver = true;
@@ -551,7 +527,6 @@
         `;
     }
 
-    // Проверка интерактивных предметов перед игроком
     function checkInteraction() {
         let closestItem = null;
         let minDist = 3.5;
@@ -586,7 +561,6 @@
         }
     }
 
-    // Соединение фото и проявителя в инвентаре
     function checkCombination() {
         if (inventory.hasPhoto && inventory.hasDeveloper && !inventory.developedPhoto) {
             inventory.developedPhoto = true;
@@ -645,10 +619,11 @@
         if (inventory.developedPhoto) html += `<div class="inv-item" style="color:#ffeb3b"><span>Код на фото:</span><span>${secretCode}</span></div>`;
         if (inventory.hasCard) html += `<div class="inv-item"><span>Карта доступа</span><span>ЕСТЬ</span></div>`;
 
-        document.getElementById('inventory-list') || document.getElementById('inv-list').innerHTML = html || 'Пусто';
+        // ИСПРАВЛЕНО: теперь здесь правильный id из HTML (inv-list)
+        const invListEl = document.getElementById('inv-list');
+        if (invListEl) invListEl.innerHTML = html || 'Пусто';
     }
 
-    // Проверка коллизий игрока со стенами лабиринта
     function checkCollision(pos) {
         const playerBox = new THREE.Box3(
             new THREE.Vector3(pos.x - 0.4, pos.y - player.height, pos.z - 0.4),
@@ -669,7 +644,6 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    // Главный игровой цикл
     let clock = new THREE.Clock();
     let stepTimer = 0;
 
@@ -679,7 +653,6 @@
         const delta = clock.getDelta();
 
         if (isPlaying && !gameWon && !gameOver) {
-            // Движение игрока
             let moveSpeed = player.speed * (keys.shift ? 1.6 : (keys.ctrl ? 0.6 : 1.0)) * delta;
             
             const dir = new THREE.Vector3();
@@ -692,7 +665,6 @@
             if (keys.d) dir.add(side);
             dir.normalize();
 
-            // Проверка коллизий по осям X и Z отдельно для плавного скольжения
             let nextX = player.position.clone().add(new THREE.Vector3(dir.x * moveSpeed, 0, 0));
             if (!checkCollision(nextX)) player.position.x = nextX.x;
 
@@ -704,7 +676,6 @@
             camera.rotateY(player.rotation.y);
             camera.rotateX(player.rotation.x);
 
-            // Проверка близости предметов для подсказки
             let showPrompt = false;
             interactiveItems.forEach(item => {
                 if (!item.userData.collected && player.position.distanceTo(item.position) < 3.5) {
@@ -713,11 +684,9 @@
             });
             document.getElementById('interaction-prompt').style.display = showPrompt ? 'block' : 'none';
 
-            // ИИ Клота (паука)
             if (clotMesh) {
                 const distToPlayer = clotMesh.position.distanceTo(player.position);
 
-                // Звуки шагов и хлюпанья при приближении
                 stepTimer += delta;
                 if (stepTimer > (distToPlayer < 10 ? 0.35 : 0.7)) {
                     stepTimer = 0;
@@ -734,7 +703,6 @@
                     clotMesh.position.lerp(player.position, clotState.speed * 1.3 * delta);
                 } else {
                     clotState.state = 'patrol';
-                    // Случайное блуждание
                     clotState.timer += delta;
                     if (clotState.timer > 4) {
                         clotState.timer = 0;
@@ -747,7 +715,6 @@
 
                 clotMesh.lookAt(player.position.x, clotMesh.position.y, player.position.z);
 
-                // Смерть при касании Клота
                 if (distToPlayer < 1.8) {
                     triggerJumpscare();
                 }
